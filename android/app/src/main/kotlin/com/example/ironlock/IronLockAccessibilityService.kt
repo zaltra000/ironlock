@@ -30,7 +30,7 @@ class IronLockAccessibilityService : AccessibilityService() {
     
     private fun checkAndBlock(packageName: String) {
         if (sessionManager.isSessionActive()) {
-            if (!sessionManager.isAppWhitelisted(packageName)) {
+            if (sessionManager.shouldBlockApp(packageName)) {
                 Log.d(TAG, "Blocking app: $packageName")
                 overlayController.show()
                 
@@ -41,7 +41,7 @@ class IronLockAccessibilityService : AccessibilityService() {
                 }
                 startActivity(homeIntent)
             } else {
-                Log.d(TAG, "App whitelisted: $packageName")
+                Log.d(TAG, "App whitelisted/allowed: $packageName")
                 overlayController.hide()
             }
         } else {

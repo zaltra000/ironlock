@@ -17,10 +17,11 @@ class MainActivity: FlutterActivity() {
             when (call.method) {
                 "startSession" -> {
                     val durationMillis = call.argument<Int>("durationMillis")?.toLong() ?: 0L
-                    val whitelistedApps = call.argument<List<String>>("whitelistedApps") ?: listOf()
+                    val isFullLockMode = call.argument<Boolean>("isFullLockMode") ?: true
+                    val selectedApps = call.argument<List<String>>("selectedApps") ?: listOf()
                     
                     val sessionManager = SessionManager(this)
-                    sessionManager.startSession(durationMillis, whitelistedApps)
+                    sessionManager.startSession(durationMillis, isFullLockMode, selectedApps)
                     
                     val serviceIntent = Intent(this, IronLockForegroundService::class.java)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

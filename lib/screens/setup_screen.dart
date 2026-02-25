@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'active_session_screen.dart';
+import 'app_selection_sheet.dart';
 
 class SetupScreen extends StatefulWidget {
   const SetupScreen({super.key});
@@ -14,6 +15,8 @@ class _SetupScreenState extends State<SetupScreen>
   int _selectedHours = 0;
   int _selectedMinutes = 2; // Default 2 minutes for testing
   bool _isRequestingPermission = false;
+  bool _isFullLockMode = true;
+  List<String> _selectedApps = [];
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -89,13 +92,20 @@ class _SetupScreenState extends State<SetupScreen>
       return;
     }
 
-    try {
-      // Pass an empty whitelist array for now, or add basics like calculator
-      List<String> whitelist = ['com.android.calculator2'];
+    if (!_isFullLockMode && _selectedApps.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least one app to lock!'),
+        ),
+      );
+      return;
+    }
 
+    try {
       await platform.invokeMethod('startSession', {
         'durationMillis': totalMillis,
-        'whitelistedApps': whitelist,
+        'isFullLockMode': _isFullLockMode,
+        'selectedApps': _selectedApps,
       });
 
       if (mounted) {
@@ -158,10 +168,23 @@ class _SetupScreenState extends State<SetupScreen>
                 ),
                 const Spacer(),
                 const Text(
+                  'LOCK MODE',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                    color: Colors.white70,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildModeSelector(),
+                const SizedBox(height: 32),
+                const Text(
                   'SELECT DURATION',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 2,
                     color: Colors.white70,
@@ -245,6 +268,73 @@ class _SetupScreenState extends State<SetupScreen>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildModeSelector() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ChoiceChip(
+              label: const Text('FULL LOCK'),
+              selected: _isFullLockMode,
+              selectedColor: const Color(0xFFE50914),
+              backgroundColor: Colors.white10,
+              labelStyle: TextStyle(
+                color: _isFullLockMode ? Colors.white : Colors.white54,
+                fontWeight: FontWeight.bold,
+              ),
+              onSelected: (val) => setState(() => _isFullLockMode = true),
+            ),
+            const SizedBox(width: 16),
+            ChoiceChip(
+              label: const Text('SPECIFIC APPS'),
+              selected: !_isFullLockMode,
+              selectedColor: const Color(0xFFE50914),
+              backgroundColor: Colors.white10,
+              labelStyle: TextStyle(
+                color: !_isFullLockMode ? Colors.white : Colors.white54,
+                fontWeight: FontWeight.bold,
+              ),
+              onSelected: (val) => setState(() => _isFullLockMode = false),
+            ),
+          ],
+        ),
+        if (!_isFullLockMode) ...[
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () async {
+              final result = await showModalBottomSheet<List<String>>(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => Padding(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top + 40,
+                  ),
+                  child: AppSelectionSheet(initialSelectedApps: _selectedApps),
+                ),
+              );
+              if (result != null) {
+                setState(() => _selectedApps = result);
+              }
+            },
+            icon: const Icon(Icons.apps, color: Colors.white),
+            label: Text(
+              _selectedApps.isEmpty
+                  ? 'Select Apps to Lock'
+                  : '${_selectedApps.length} Apps Selected',
+              style: const TextStyle(color: Colors.white),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFFE50914)),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
