@@ -28,23 +28,28 @@ class IronLockAccessibilityService : AccessibilityService() {
         }
     }
     
+    private var lastBlockedPackage: String = ""
+
     private fun checkAndBlock(packageName: String) {
         if (sessionManager.isSessionActive()) {
             if (sessionManager.shouldBlockApp(packageName)) {
                 Log.d(TAG, "Blocking app: $packageName")
                 overlayController.show()
                 
-                // Force go home to close the app below the overlay
-                val homeIntent = Intent(Intent.ACTION_MAIN).apply {
-                    addCategory(Intent.CATEGORY_HOME)
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                // Emulate Home button press for a smooth, lag-free exit from the app
+                // Only do this if we aren't already on the home screen/launcher.
+                // To prevent infinite loop, we avoid calling it repeatedly for the same package.
+                if (packageName != lastBlockedPackage && packageName != "com.android.systemui") {
+                    lastBlockedPackage = packageName
+                    performGlobalAction(GLOBAL_ACTION_HOME)
                 }
-                startActivity(homeIntent)
             } else {
-                Log.d(TAG, "App whitelisted/allowed: $packageName")
+                Log.d(TAG, "App allowed: $packageName")
+                lastBlockedPackage = ""
                 overlayController.hide()
             }
         } else {
+            lastBlockedPackage = ""
             overlayController.hide()
         }
     }
