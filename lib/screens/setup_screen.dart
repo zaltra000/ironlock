@@ -152,10 +152,13 @@ class _SetupScreenState extends State<SetupScreen>
           ),
         ),
         child: SafeArea(
+          bottom: true,
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 48.0,
+            padding: EdgeInsets.only(
+              left: 24.0,
+              right: 24.0,
+              top: 48.0,
+              bottom: MediaQuery.of(context).padding.bottom + 16.0,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,

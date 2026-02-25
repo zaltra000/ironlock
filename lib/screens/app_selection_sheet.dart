@@ -81,113 +81,119 @@ class _AppSelectionSheetState extends State<AppSelectionSheet> {
           topRight: Radius.circular(24),
         ),
       ),
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          // Handle
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white38,
-              borderRadius: BorderRadius.circular(2),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            // Handle
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white38,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Select Apps to Lock',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(
-                      context,
-                    ).pop(_selectedAppPackageNames.toList());
-                  },
-                  child: const Text(
-                    'Done',
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Select Apps to Lock',
                     style: TextStyle(
-                      color: Color(0xFFE50914),
+                      color: Colors.white,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
                     ),
                   ),
-                ),
-              ],
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(
+                        context,
+                      ).pop(_selectedAppPackageNames.toList());
+                    },
+                    child: const Text(
+                      'Done',
+                      style: TextStyle(
+                        color: Color(0xFFE50914),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              onChanged: _filterApps,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Search apps...',
-                hintStyle: const TextStyle(color: Colors.white54),
-                prefixIcon: const Icon(Icons.search, color: Colors.white54),
-                filled: true,
-                fillColor: Colors.white10,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                onChanged: _filterApps,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Search apps...',
+                  hintStyle: const TextStyle(color: Colors.white54),
+                  prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                  filled: true,
+                  fillColor: Colors.white10,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
             ),
-          ),
-          Expanded(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Color(0xFFE50914),
+            Expanded(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFFE50914),
+                        ),
                       ),
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: _filteredApps.length,
-                    itemBuilder: (context, index) {
-                      final app = _filteredApps[index];
-                      final isSelected = _selectedAppPackageNames.contains(
-                        app.packageName,
-                      );
-
-                      return ListTile(
-                        leading: app.icon != null
-                            ? Image.memory(app.icon!, width: 40, height: 40)
-                            : const Icon(Icons.android, color: Colors.white54),
-                        title: Text(
-                          app.name,
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        subtitle: Text(
+                    )
+                  : ListView.builder(
+                      itemCount: _filteredApps.length,
+                      itemBuilder: (context, index) {
+                        final app = _filteredApps[index];
+                        final isSelected = _selectedAppPackageNames.contains(
                           app.packageName,
-                          style: const TextStyle(
-                            color: Colors.white38,
-                            fontSize: 12,
+                        );
+
+                        return ListTile(
+                          leading: app.icon != null
+                              ? Image.memory(app.icon!, width: 40, height: 40)
+                              : const Icon(
+                                  Icons.android,
+                                  color: Colors.white54,
+                                ),
+                          title: Text(
+                            app.name,
+                            style: const TextStyle(color: Colors.white),
                           ),
-                        ),
-                        trailing: Checkbox(
-                          value: isSelected,
-                          onChanged: (_) =>
-                              _toggleAppSelection(app.packageName),
-                          activeColor: const Color(0xFFE50914),
-                          checkColor: Colors.white,
-                        ),
-                        onTap: () => _toggleAppSelection(app.packageName),
-                      );
-                    },
-                  ),
-          ),
-        ],
+                          subtitle: Text(
+                            app.packageName,
+                            style: const TextStyle(
+                              color: Colors.white38,
+                              fontSize: 12,
+                            ),
+                          ),
+                          trailing: Checkbox(
+                            value: isSelected,
+                            onChanged: (_) =>
+                                _toggleAppSelection(app.packageName),
+                            activeColor: const Color(0xFFE50914),
+                            checkColor: Colors.white,
+                          ),
+                          onTap: () => _toggleAppSelection(app.packageName),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

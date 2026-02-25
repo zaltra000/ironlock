@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -16,11 +17,13 @@ import androidx.core.app.NotificationCompat
 class IronLockForegroundService : Service() {
     private val CHANNEL_ID = "IronLockServiceChannel"
     private lateinit var sessionManager: SessionManager
+    private var screenUnlockReceiver: ScreenUnlockReceiver? = null
     private val handler = Handler(Looper.getMainLooper())
     private val checkRunnable = object : Runnable {
         override fun run() {
             if (!sessionManager.isSessionActive()) {
                 Log.d("IronLockService", "Session expired. Stopping foreground service.")
+                unregisterScreenReceiver()
                 stopForeground(true)
                 stopSelf()
             } else {
@@ -45,14 +48,44 @@ class IronLockForegroundService : Service() {
 
         startForeground(1, notification)
         
+        // Register screen unlock receiver for Full Lock mode
+        if (sessionManager.isFullLockMode()) {
+            registerScreenReceiver()
+        }
+        
         handler.post(checkRunnable)
         
         return START_STICKY
     }
 
+    private fun registerScreenReceiver() {
+        if (screenUnlockReceiver == null) {
+            screenUnlockReceiver = ScreenUnlockReceiver()
+            val filter = IntentFilter().apply {
+                addAction(Intent.ACTION_USER_PRESENT)
+                addAction(Intent.ACTION_SCREEN_ON)
+            }
+            registerReceiver(screenUnlockReceiver, filter)
+            Log.d("IronLockService", "ScreenUnlockReceiver registered")
+        }
+    }
+
+    private fun unregisterScreenReceiver() {
+        screenUnlockReceiver?.let {
+            try {
+                unregisterReceiver(it)
+                Log.d("IronLockService", "ScreenUnlockReceiver unregistered")
+            } catch (e: Exception) {
+                Log.w("IronLockService", "Receiver already unregistered")
+            }
+            screenUnlockReceiver = null
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacks(checkRunnable)
+        unregisterScreenReceiver()
     }
 
     override fun onBind(intent: Intent): IBinder? {
