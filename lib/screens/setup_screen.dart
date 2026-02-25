@@ -74,6 +74,26 @@ class _SetupScreenState extends State<SetupScreen>
         return;
       }
 
+      // For Full Lock mode, we need Device Admin permission
+      if (_isFullLockMode) {
+        bool hasDeviceAdmin = await platform.invokeMethod(
+          'isDeviceAdminEnabled',
+        );
+        if (!hasDeviceAdmin) {
+          await platform.invokeMethod('requestDeviceAdmin');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('يرجى تفعيل صلاحية مسؤول الجهاز لإطفاء الشاشة'),
+                duration: Duration(seconds: 4),
+              ),
+            );
+          }
+          setState(() => _isRequestingPermission = false);
+          return;
+        }
+      }
+
       // All permissions are ok, let's start the session
       _startSession();
     } catch (e) {

@@ -1,7 +1,9 @@
 package com.example.ironlock
 
 import android.accessibilityservice.AccessibilityService
-import android.content.Intent
+import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
+import android.content.Context
 import android.view.accessibility.AccessibilityEvent
 import android.util.Log
 
@@ -37,13 +39,13 @@ class IronLockAccessibilityService : AccessibilityService() {
             return
         }
 
-        // Ignore our own app's events to prevent overlay flickering/loops
+        // Ignore our own app's events
         if (packageName == "com.example.ironlock") {
             return
         }
 
         if (sessionManager.isFullLockMode()) {
-            // Exceptions for emergency calls
+            // Emergency call exceptions
             val emergencyPackages = setOf(
                 "com.android.phone",
                 "com.android.server.telecom",
@@ -56,19 +58,27 @@ class IronLockAccessibilityService : AccessibilityService() {
                 return
             }
             
-            Log.d(TAG, "Full Lock Mode: locking screen")
-            // Show overlay briefly just in case, but main goal is to turn off screen
-            overlayController.show()
+            // Ignore SystemUI events (lock screen, notification shade) to prevent loops
+            if (packageName == "com.android.systemui") {
+                return
+            }
+
+            Log.d(TAG, "Full Lock Mode: locking screen via Device Admin")
             
-            if (android.os.Build.VERSION.SDK_INT >= 28) { // Build.VERSION_CODES.P
-                performGlobalAction(8) // GLOBAL_ACTION_LOCK_SCREEN
+            // Use Device Admin to lock the screen (real power-button-like lock)
+            val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+            val componentName = ComponentName(applicationContext, IronLockDeviceAdminReceiver::class.java)
+            if (dpm.isAdminActive(componentName)) {
+                dpm.lockNow()
             } else {
+                // Fallback: show overlay + go home if Device Admin is not enabled
+                overlayController.show()
                 performGlobalAction(GLOBAL_ACTION_HOME)
             }
             return
         }
 
-        // Specific Apps Mode
+        // ===== Specific Apps Mode =====
         if (sessionManager.shouldBlockApp(packageName)) {
             Log.d(TAG, "Blocking app: $packageName")
             overlayController.show()
@@ -78,7 +88,6 @@ class IronLockAccessibilityService : AccessibilityService() {
                 performGlobalAction(GLOBAL_ACTION_HOME)
             }
         } else {
-            // Only hide if not SystemUI (notification shade or lock screen)
             if (packageName != "com.android.systemui") {
                 Log.d(TAG, "App allowed: $packageName")
                 lastBlockedPackage = ""
