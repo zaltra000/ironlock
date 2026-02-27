@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'screens/permissions_screen.dart';
 import 'screens/setup_screen.dart';
 import 'screens/active_session_screen.dart';
 
@@ -9,22 +10,58 @@ void main() async {
   // Check if a session is already active via MethodChannel to jump straight to ActiveSessionScreen
   const platform = MethodChannel('ironlock_channel');
   int remainingMilli = 0;
+  bool allPermissionsGranted = false;
+
   try {
     remainingMilli = await platform.invokeMethod('isSessionActive');
   } catch (e) {
     debugPrint("Error checking session: $e");
   }
 
-  runApp(IronLockApp(initialRemainingTime: remainingMilli));
+  // Check all permissions to decide the starting screen
+  if (remainingMilli <= 0) {
+    try {
+      final hasAccessibility =
+          await platform.invokeMethod('checkAccessibilityPermission') ?? false;
+      final hasOverlay =
+          await platform.invokeMethod('checkOverlayPermission') ?? false;
+      final hasDeviceAdmin =
+          await platform.invokeMethod('isDeviceAdminEnabled') ?? false;
+      allPermissionsGranted = hasAccessibility && hasOverlay && hasDeviceAdmin;
+    } catch (e) {
+      debugPrint("Error checking permissions: $e");
+    }
+  }
+
+  runApp(
+    IronLockApp(
+      initialRemainingTime: remainingMilli,
+      allPermissionsGranted: allPermissionsGranted,
+    ),
+  );
 }
 
 class IronLockApp extends StatelessWidget {
   final int initialRemainingTime;
+  final bool allPermissionsGranted;
 
-  const IronLockApp({super.key, required this.initialRemainingTime});
+  const IronLockApp({
+    super.key,
+    required this.initialRemainingTime,
+    required this.allPermissionsGranted,
+  });
 
   @override
   Widget build(BuildContext context) {
+    Widget home;
+    if (initialRemainingTime > 0) {
+      home = ActiveSessionScreen(remainingMilli: initialRemainingTime);
+    } else if (allPermissionsGranted) {
+      home = const SetupScreen();
+    } else {
+      home = const PermissionsScreen();
+    }
+
     return MaterialApp(
       title: 'IronLock - No Escape',
       debugShowCheckedModeBanner: false,
@@ -38,9 +75,7 @@ class IronLockApp extends StatelessWidget {
         ),
         fontFamily: 'Roboto',
       ),
-      home: initialRemainingTime > 0
-          ? ActiveSessionScreen(remainingMilli: initialRemainingTime)
-          : const SetupScreen(),
+      home: home,
     );
   }
 }
